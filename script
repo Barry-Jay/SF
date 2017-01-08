@@ -1,0 +1,134 @@
+(* This program is free software; you can redistribute it and/or      *)
+(* modify it under the terms of the GNU Lesser General Public License *)
+(* as published by the Free Software Foundation; either version 2.1   *)
+(* of the License, or (at your option) any later version.             *)
+(*                                                                    *)
+(* This program is distributed in the hope that it will be useful,    *)
+(* but WITHOUT ANY WARRANTY; without even the implied warranty of     *)
+(* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the      *)
+(* GNU General Public License for more details.                       *)
+(*                                                                    *)
+(* You should have received a copy of the GNU Lesser General Public   *)
+(* License along with this program; if not, write to the Free         *)
+(* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA *)
+(* 02110-1301 USA                                                     *)
+
+
+(**********************************************************************)
+(*                     SF-Calculus                                    *)
+(*                                                                    *)
+(* is implemented in Coq by adapting the implementation of            *) 
+(* Lambda Calculus  from Project Coq                                  *)
+(* 2015                                                               *)
+(**********************************************************************)
+
+(**********************************************************************)
+(*                       script                                       *)
+(*                                                                    *)
+(*                     Barry Jay                                      *)
+(*                                                                    *)
+(**********************************************************************)
+
+(* A copy of the SF-calculus used to support 
+   a translation from lift lambda-calculus to SF-calculus 
+*) 
+
+
+
+coqc General.v; 
+coqc Test.v;    
+coqc SF_Terms.v;
+coqc SF_Tactics.v 
+coqc SF_Substitution_term.v; 
+
+coqc SF_reduction.v; 
+
+coqc SF_Normal.v;  
+coqc SF_Closed.v;  
+coqc SF_Eval.v;
+coqc Star;
+coqc Equal.v; 
+coqc Extensions;
+coqc SF_arithmetic;
+
+coqc Lifting;
+coqc Substituting;
+
+cd Lift
+
+coqc Lift_Terms;
+coqc Lift_Tactics;
+coqc Lift_reduction;
+coqc Lift_Normal;
+coqc Lift_Translation;
+
+(* a listing of the propositions and theorems *)
+
+SF_reduction.v:Theorem confluence_sf_red: confluence SF sf_red. 
+SF_Normal.v:Theorem progress : forall (M : SF), normal M \/ (exists N, sf_seqred1 M N) .
+SF_Closed.v:Theorem programs_are_factorable : forall M, program M  -> factorable M. 
+Star.v: Proposition star_beta: forall M N, sf_red (App (star M) N) (subst M N).
+Star.v: Proposition var_check : forall i M N, sf_red (App (var i M) N) (var  i (App (App s_op M) N)).
+Equal.v:Theorem equal_programs : forall M, program M -> sf_red (App (App equal_comb M) M) k_op.
+Equal.v:Theorem unequal_programs : forall M N, program M -> program N -> M<>N ->
+                                       sf_red (App (App equal_comb M) N) (App k_op i_op).
+Extensions.v: Proposition extensions_by_matching:
+  forall P N sigma,  matching P N sigma ->
+                     forall M R, sf_red (App (extension P M R) N) (fold_left subst sigma M) .
+Extensions.v: Proposition extensions_by_matchfail:
+  forall P N,  matchfail P N -> forall M R, sf_red (App (extension P M R) N) (App R N).
+Lifting.v: Proposition lift_rec_comb_op :
+  forall s o n, sf_red (App (App (fix_comb (subst_rec lift_rec_comb_fn s 0)) (Op o)) n) (Op o). 
+Lifting.v: Proposition lift_rec_comb_op1:
+  forall s o n, sf_red (App (App (App lift_rec_comb s) (Op o)) n) (Op o). 
+Lifting.v: Proposition lift_rec_comb_var :
+  forall s i M n, sf_red (App (App (App lift_rec_comb s) (var i M)) n)
+                        (var (relocate_term n i)
+                             (App(App(fix_comb (subst_rec lift_rec_comb_fn s 0)) M) n)). 
+Lifting: Proposition lift_rec_comb_abs :
+  forall s n M, program s -> matchfail (app_comb vee (Ref 1)) s -> 
+                sf_red (App (App (App lift_rec_comb s) (lambda_term s M)) n)
+                      (lambda_term s 
+                                   (App
+                                      (App (fix_comb (subst_rec lift_rec_comb_fn s 0))
+                                           M) (App (Op Sop) n))). 
+Lifting: Proposition lift_rec_comb_app :
+  forall s n M1 M2, program  s -> compound (App M1 M2) -> 
+                      matchfail (var (Ref 1) (Ref 0))  (App M1 M2) -> 
+                      matchfail (lambda_term (Ref 1) (Ref 0))  (App M1 M2) -> 
+      sf_red (App (App (fix_comb (subst_rec lift_rec_comb_fn s 0)) (App M1 M2)) n)
+            (App (App (App (fix_comb (subst_rec lift_rec_comb_fn s 0)) M1) n)
+                 (App (App (fix_comb (subst_rec lift_rec_comb_fn s 0)) M2) n))
+. 
+Substituting.v: Proposition subst_rec_comb_op :
+  forall N o, sf_red (App (App subst_rec_comb (Op o)) N) (Op o). 
+Substituting.v: Proposition subst_rec_comb_var :
+  forall N i M, sf_red (App (App subst_rec_comb (var i M)) N)
+                      (insert_Ref_comb i N (App (App subst_rec_comb M) N)).
+Proposition subst_rec_comb_abs :
+  forall N M, sf_red (App (App subst_rec_comb (abs M)) N)
+                    (abs (App (abs (swap_vars subst_rec_comb M)) 
+                              (App (App (App lift_rec_comb subst_rec_comb) N) s_op))). 
+Substituting.v: Proposition subst_rec_comb_app :
+  forall N M1 M2, compound (App M1 M2) -> 
+                      matchfail (var (Ref 1) (Ref 0))  (App M1 M2) -> 
+                      matchfail (lambda_term  (Ref 1) (Ref 0)) (App M1 M2) -> 
+      sf_red (App (App subst_rec_comb (App M1 M2)) N) 
+            (App (App (App subst_rec_comb M1) N)
+                 (App (App subst_rec_comb M2) N))
+. 
+Theorem beta: forall M N, sf_red (App (abs M) N) (App (App subst_rec_comb M) N). 
+Theorem xi: forall M N, sf_red M N -> sf_red (abs M) (abs N).
+
+
+Lift/Lift_reduction.v:Theorem lift_confluence: confluence lambda lift_red. 
+Lift/Lift_Normal.v: Theorem progress : forall (M : lambda), normal M \/ (exists N, seq_red1 M N) .
+
+
+
+Lift/Lift_Normal.v:Theorem progress : 
+Lift/Lift_Normal.v:Theorem irreducible_iff_normal: forall M, irreducible M seq_red1 <-> normal M. 
+
+Lift/Lift_Translation.v:Theorem lambda_to_SF_preserves_equality:
+forall M N, lift_equal M N -> SF_equal (lambda_to_SF M) (lambda_to_SF N). 
+
