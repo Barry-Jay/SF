@@ -39,7 +39,7 @@ coqc General.v;
 coqc Test.v;    
 coqc SF_Terms.v;
 coqc SF_Tactics.v 
-coqc SF_Substitution_term.v; 
+coqc Substitution_term.v; 
 
 coqc SF_reduction.v; 
 
@@ -54,7 +54,7 @@ coqc SF_arithmetic;
 coqc Lifting;
 coqc Substituting;
 
-cd Lift
+cd Lift;
 
 coqc Lift_Terms;
 coqc Lift_Tactics;

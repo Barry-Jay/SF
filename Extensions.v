@@ -935,7 +935,7 @@ eapply2 IHP2. simpl in *; max_out; inversion H2; split_all.
 inversion H0; inversion H5; simpl in *; max_out; split_all. 
 intro; subst; eapply2 H1. 
 eapply2 matchfail_app_l. 
-assert(factorable (App s l0)) by eapply2 programs_are_factorable. 
+assert(factorable (App s s0)) by eapply2 programs_are_factorable. 
 inversion H6; split_all; subst. 
 eapply2 IHP1. simpl in *; max_out; inversion H2; split_all. 
 inversion H0. simpl in *; max_out.  inversion H6; split_all. 
